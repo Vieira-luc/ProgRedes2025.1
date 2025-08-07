@@ -145,5 +145,5 @@ def main():
             else:
                 print("Comando inválido.")
 
-if __name__ == "__main__":
-    main()
+
+main()
