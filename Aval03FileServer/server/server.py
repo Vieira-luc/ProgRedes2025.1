@@ -7,7 +7,7 @@ import glob
 HOST = '0.0.0.0'
 PORT = 57432
 BUFFER_SIZE = 4096
-SERVER_DIR = os.path.realpath("server/arquivos") #para o usuario não acessar uma pasta indevida
+PASTAARQSERVER = os.path.realpath("server/arquivos") #para o usuario não acessar uma pasta indevida
 
 def envia_dados(conn, dados:bytes):     #função para auxiliar na garantia que todos os dados foram enviados
     total_enviado = 0
@@ -18,7 +18,7 @@ def envia_dados(conn, dados:bytes):     #função para auxiliar na garantia que 
         total_enviado += enviado
 
 def recebe_linha(conn):  #função necessaria para a resposta do cliente, pois ao finalizar(enter) isso é um \n
-                         #alem disso é como se o servidor esperasse o comando todo chegar (ele só vai parar quando ver um \n)
+                         #alem disso é como se o servidor esperasse o comando todo chegar (ele só vai parar quando ver um \n, e seguir adiante)
     dados = b''
     while True:
         parte = conn.recv(1)
@@ -31,8 +31,8 @@ def recebe_linha(conn):  #função necessaria para a resposta do cliente, pois a
 
 def lista_arquivos():   #COMANDO DIR
     arquivos = []       #lista com os arquivos do servidor
-    for nome in os.listdir(SERVER_DIR):
-        caminho = os.path.realpath(os.path.join(SERVER_DIR, nome)) 
+    for nome in os.listdir(PASTAARQSERVER):
+        caminho = os.path.realpath(os.path.join(PASTAARQSERVER, nome)) 
         if os.path.isfile(caminho):
             tamanho = os.path.getsize(caminho)      
             arquivos.append(f"{nome} ({tamanho} bytes)")
@@ -42,8 +42,8 @@ def lista_arquivos():   #COMANDO DIR
 
 
 def enviar_arquivo(conn, nome_arquivo, inicio=0):
-    caminho = os.path.realpath(os.path.join(SERVER_DIR, nome_arquivo))
-    if not caminho.startswith(SERVER_DIR) or not os.path.isfile(caminho):           #apenas para garantir que é valido
+    caminho = os.path.realpath(os.path.join(PASTAARQSERVER, nome_arquivo))
+    if not caminho.startswith(PASTAARQSERVER) or not os.path.isfile(caminho):           #apenas para garantir que é valido
         envia_dados(conn, b"ERRO: Arquivo nao encontrado\nFIM\n")
         return
 
@@ -105,8 +105,8 @@ def tratar_cliente(conn, addr):
             elif cmd == 'MD5' and len(partes) == 3:  #como o comando MD5 precisa do dow,de um arquivo, e de quantos bytes o usuario tem são 3 partes
                 nome = partes[1]
                 posicao = int(partes[2])
-                caminho = os.path.realpath(os.path.join(SERVER_DIR, nome))
-                if not caminho.startswith(SERVER_DIR):
+                caminho = os.path.realpath(os.path.join(PASTAARQSERVER, nome))
+                if not caminho.startswith(PASTAARQSERVER):
                     envia_dados(conn, b"ERRO,DIRETORIO NAO ENCONTRADO\n")
                 else:
                     hash_md5 = calcular_md5(caminho, posicao)
@@ -117,8 +117,8 @@ def tratar_cliente(conn, addr):
 
             elif cmd == 'DRA' and len(partes) == 4: #parte 1: comando parte 2: arquivo parte 3: ate onde recebeu parte 4: hash
                 nome, pos, hash_cliente = partes[1], int(partes[2]), partes[3]
-                caminho = os.path.realpath(os.path.join(SERVER_DIR, nome))
-                if not caminho.startswith(SERVER_DIR) or not os.path.isfile(caminho):
+                caminho = os.path.realpath(os.path.join(PASTAARQSERVER, nome))
+                if not caminho.startswith(PASTAARQSERVER) or not os.path.isfile(caminho):
                     envia_dados(conn, b"ERRO\n")
                     continue
                 hash_servidor = calcular_md5(caminho, pos)
@@ -129,7 +129,7 @@ def tratar_cliente(conn, addr):
                     envia_dados(conn, b"ERRO\n")
 
             elif cmd == 'DMA' and len(partes) == 2: #comando e extensão pretendida para o download
-                padrao = os.path.realpath(os.path.join(SERVER_DIR, partes[1]))
+                padrao = os.path.realpath(os.path.join(PASTAARQSERVER, partes[1]))
                 lista = glob.glob(padrao)
                 nomes = [os.path.basename(f) for f in lista if os.path.isfile(f)]
                 if nomes:
@@ -155,5 +155,5 @@ def main():
             conn, addr = s.accept()
             threading.Thread(target=tratar_cliente, args=(conn, addr)).start()
 
-if __name__ == "__main__":
-    main()
+
+main()
